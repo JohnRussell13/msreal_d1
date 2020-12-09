@@ -90,7 +90,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 	//there are only few possibilities, so this won't be hard
 	
 	if (!strncmp(str_in,mods[0],mods_len[0])){
-		strcpy(storage,str_in);
+		strcpy(storage,str_in+mods_len[0]);//copy string into storage, without mod
 		printk(KERN_INFO "String stored correctly.");
 	}
 	return length;
