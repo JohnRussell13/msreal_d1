@@ -87,12 +87,6 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 
 	ret = sscanf(buff,"%s", str_in);
 
-	if (ret!=1)//one parameters parsed in sscanf
-	{
-		printk(KERN_WARNING "Wrong command format\nexpected: string=S\n\tS = input string\n");
-		return length;//maybe -1
-	}
-
 	//there are only few possibilities, so this won't be hard
 	
 	if (!strncmp(str_in,mods[0],mods_len[0])){
