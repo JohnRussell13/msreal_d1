@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #define path "/dev/stred"
+#define STORAGE_SIZE 100 
 
 void menu_print(){
 	printf("Choose one of the following options:\n");
@@ -15,7 +17,7 @@ void menu_print(){
 
 FILE *fp;
 char *str;
-size_t byte_size = 100;
+size_t byte_size = STORAGE_SIZE;
 
 void read_str(){
 	fp = fopen(path, "r");
@@ -41,8 +43,7 @@ void write_str(){
 		printf("Error: Invalid path. File not opened.\n");
 		return;
 	}
-	fprintf(fp, "string=%s", str);
-	
+	fprintf(fp, "string=%s\n", str);//too many hours spent on \n..
 	if (fclose(fp)){
 		printf("Error: File can't be closed.\n");
 		return;
@@ -58,7 +59,7 @@ void concat_str(){
 		printf("Error: Invalid path. File not opened.\n");
 		return;
 	}
-	fprintf(fp, "append=%s", str);
+	fprintf(fp, "append=%s\n", str);
 	
 	if (fclose(fp)){
 		printf("Error: File can't be closed.\n");
@@ -72,7 +73,7 @@ void delete_str(){
 		printf("Error: Invalid path. File not opened.\n");
 		return;
 	}
-	fprintf(fp, "clear");
+	fprintf(fp, "clear\n");
 	
 	if (fclose(fp)){
 		printf("Error: File can't be closed.\n");
@@ -86,7 +87,7 @@ void clear_str(){
 		printf("Error: Invalid path. File not opened.\n");
 		return;
 	}
-	fprintf(fp, "shrink");
+	fprintf(fp, "shrink\n");
 	
 	if (fclose(fp)){
 		printf("Error: File can't be closed.\n");
@@ -101,9 +102,9 @@ void remove_str(){
 	if (fp == NULL){
 		printf("Error: Invalid path. File not opened.\n");
 		return;
-	}
-	fprintf(fp, "remove=%s", str);
-	
+	}	
+	fprintf(fp, "remove=%s\n", str);
+
 	if (fclose(fp)){
 		printf("Error: File can't be closed.\n");
 		return;
@@ -113,12 +114,13 @@ void remove_str(){
 void truncate_str(){
 	int trunc;
 	printf("Insert number of truncated characters:\n");
-	scanf("%s", str);
+	scanf("%d", &trunc);
 	fp = fopen(path, "w");
 	if (fp == NULL){
 		printf("Error: Invalid path. File not opened.\n");
 		return;
 	}
+	printf("TRUNC: %d", trunc);
 	fprintf(fp, "truncate=%d", trunc);
 	
 	if (fclose(fp)){
