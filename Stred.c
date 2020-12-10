@@ -83,6 +83,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 	char * needle_p;
 	char str_help[STORAGE_SIZE];
 	int i;
+	int j;
 
 	ret = copy_from_user(buff, buffer, length);
 	if (ret)
@@ -161,6 +162,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		for (i = strlen(str_in); i < ret; i++){
 			str_in[i] = 0;
 		}
+		j = strlen(storage);
 		ret = strlen(str_in);
 		while(1) {
 			needle_p = strstr(storage, str_in);
@@ -175,6 +177,9 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 			else {
 				break;
 			}
+		}
+		for (i = strlen(storage); i < j; i++){
+			storage[i] = 0;
 		}
 		printk(KERN_INFO "Substrings removed successfully.\n");
 	}
