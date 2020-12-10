@@ -136,10 +136,12 @@ void error_hand(){
 }
 
 int main(){
-	unsigned char mode;
+	char *input;
+	int mode;
 	while(1){
 		menu_print();
-		scanf("%hhu", &mode);
+		scanf("%s", input);
+		mode = atoi(input);
 		if (!(mode > 0 && mode <= 7)){
 			error_hand();
 		}
