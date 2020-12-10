@@ -16,7 +16,8 @@ void menu_print(){
 }
 
 FILE *fp;
-char *str;
+char *str_d;
+char str[STORAGE_SIZE];
 size_t byte_size = STORAGE_SIZE;
 
 void read_str(){
@@ -25,14 +26,14 @@ void read_str(){
 		printf("Error: Invalid path. File not opened.\n");
 		return;
 	}
-	str = (char *)malloc(byte_size + 1);
-	getline(&str, &byte_size, fp);
+	str_d = (char *)malloc(byte_size + 1);
+	getline(&str_d, &byte_size, fp);
 	
 	if (fclose(fp)){
 		printf("Error: File can't be closed.\n");
 		return;
 	}
-	printf("%s", str);
+	printf("%s", str_d);
 }
 
 void write_str(){
