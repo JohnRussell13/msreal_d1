@@ -176,7 +176,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 				return -ERESTARTSYS;
 		}
 		strcat(storage, str_in + mods_len[3]);//append string, without mod
-		printk(KERN_INFO "Substrings appended successfully.\n");
+		printk(KERN_INFO "String appended successfully.\n");
 	}
 	else if (!strncmp(str_in, mods[4], mods_len[4])){
 		//string to int, with error handling
