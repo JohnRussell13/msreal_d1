@@ -9,6 +9,8 @@
 #include <linux/kdev_t.h>
 #include <linux/uaccess.h>
 #include <linux/errno.h>
+#include <linux/wait.h>
+#include <linux/semaphore.h>
 #define BUFF_SIZE 120
 #define STORAGE_SIZE 100 + 1
 
@@ -18,6 +20,11 @@ dev_t my_dev_id;
 static struct class *my_class;
 static struct device *my_device;
 static struct cdev *my_cdev;
+
+DECLARE_WAIT_QUEUE_HEAD(readQ);
+DECLARE_WAIT_QUEUE_HEAD(writeQ);
+struct semaphore sem;
+struct fasync_struct *async_queue;
 
 char storage[STORAGE_SIZE];
 int pos = 0;
@@ -63,12 +70,17 @@ ssize_t stred_read(struct file *pfile, char __user *buffer, size_t length, loff_
 		printk(KERN_INFO "Succesfully read from storage, size: %d\n", strlen(storage));
 		return 0;
 	}
+
+	if (wait_event_interruptible(readQ,(strlen(storage) == 0)))
+		return -ERESTARTSYS;
+
 	len = scnprintf(buff,BUFF_SIZE , "%c", storage[pos]);
 	ret = copy_to_user(buffer, buff, len);
 	if (ret)
 		return -EFAULT;
 	pos ++;
 	if (pos == STORAGE_SIZE) {
+		wake_up_interruptible(&writeQ);
 		endRead = 1;
 	}
 	return len;
@@ -89,6 +101,9 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 	if (ret)
 		return -EFAULT;
 	buff[length-1] = '\0';
+	
+	if (wait_event_interruptible(writeQ, (strlen(storage) == STORAGE_SIZE)))
+		return -ERESTARTSYS;
 
 	//error handling for too large input is done later
 	//read
@@ -192,6 +207,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		printk(KERN_ERR "Invalid input.\n");
 		return -EFAULT;
 	}
+	wake_up_interruptible(&readQ);
 	return length;
 }
 
