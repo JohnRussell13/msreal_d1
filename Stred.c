@@ -71,8 +71,15 @@ ssize_t stred_read(struct file *pfile, char __user *buffer, size_t length, loff_
 		return 0;
 	}
 
-	if (wait_event_interruptible(readQ,(strlen(storage) == 0)))
+	if (down_interruptible(&sem))
 		return -ERESTARTSYS;
+	while (strlen(storage) == 0){
+		up(&sem);
+		if (wait_event_interruptible(readQ, (strlen(storage) > 0)))
+			return -ERESTARTSYS;
+		if (down_interruptible(&sem))
+			return -ERESTARTSYS;
+	}
 
 	len = scnprintf(buff,BUFF_SIZE , "%c", storage[pos]);
 	ret = copy_to_user(buffer, buff, len);
@@ -83,6 +90,8 @@ ssize_t stred_read(struct file *pfile, char __user *buffer, size_t length, loff_
 		wake_up_interruptible(&writeQ);
 		endRead = 1;
 	}
+	up(&sem);
+	wake_up_interruptible(&writeQ);
 	return len;
 }
 
@@ -102,8 +111,15 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		return -EFAULT;
 	buff[length-1] = '\0';
 	
-	if (wait_event_interruptible(writeQ, (strlen(storage) == STORAGE_SIZE)))
+	if (down_interruptible(&sem))
 		return -ERESTARTSYS;
+	while (strlen(storage) == STORAGE_SIZE){
+		up(&sem);
+		if (wait_event_interruptible(writeQ, (strlen(storage) < STORAGE_SIZE)))
+			return -ERESTARTSYS;
+		if (down_interruptible(&sem))
+			return -ERESTARTSYS;
+	}
 
 	//error handling for too large input is done later
 	//read
@@ -207,6 +223,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		printk(KERN_ERR "Invalid input.\n");
 		return -EFAULT;
 	}
+	up(&sem);
 	wake_up_interruptible(&readQ);
 	return length;
 }
@@ -233,6 +250,8 @@ static int __init stred_init(void)
    	mods_len[3] = 7; 
 	mods_len[4] = 9; 	
 	mods_len[5] = 7;
+
+	sema_init(&sem,1);
 		
 	ret = alloc_chrdev_region(&my_dev_id, 0, 1, "stred");
    	if (ret){
