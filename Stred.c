@@ -10,7 +10,7 @@
 #include <linux/uaccess.h>
 #include <linux/errno.h>
 #define BUFF_SIZE 120
-#define STORAGE_SIZE 100
+#define STORAGE_SIZE 100 + 1
 
 MODULE_LICENSE("Dual BSD/GPL");
 
@@ -90,25 +90,24 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		return -EFAULT;
 	buff[length-1] = '\0';
 
-	//error handling for too large input
-	if (length + strlen(storage) <= STORAGE_SIZE){
-		//sscanf(buff,"%s", str_in);
-		strcpy(str_in, buff);
-	}
-	else{
-		printk(KERN_ERR "Not enough space for your input.\n");
-		return -EFAULT;
-	}
-
+	//error handling for too large input is done later
+	//read
+	strcpy(str_in, buff);
 
 	//there are only few possibilities, so this won't be hard
 	if (!strncmp(str_in, mods[0], mods_len[0])){
-		strcpy(storage, str_in + mods_len[0]);//copy string into storage, without mod
-		//not required if clear used, but just in case..
-		for (i = strlen(storage); i < STORAGE_SIZE; i++){
-			storage[i] = 0;
+		if (strlen(storage) + strlen(str_in) - mods_len[0] < STORAGE_SIZE ){
+			strcpy(storage, str_in + mods_len[0]);//copy string into storage, without mod
+			//not required if clear used, but just in case..
+			for (i = strlen(storage); i < STORAGE_SIZE; i++){
+				storage[i] = 0;
+			}
+			printk(KERN_INFO "String stored correctly.\n");
 		}
-		printk(KERN_INFO "String stored correctly.\n");
+		else{
+			printk(KERN_ERR "Not enough space for your input.\n");
+			return -EFAULT;
+		}
 	}
 	else if (!strncmp(str_in, mods[1], mods_len[1])){
 		//init storage
@@ -136,8 +135,14 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		printk(KERN_INFO "Spaces eliminated successfully.\n");
 	}
 	else if (!strncmp(str_in, mods[3], mods_len[3])){
-		strcat(storage, str_in + mods_len[3]);//append string, without mod
-		printk(KERN_INFO "Substrings appended successfully.\n");
+		if (strlen(storage) + strlen(str_in) - mods_len[3] < STORAGE_SIZE){
+			strcat(storage, str_in + mods_len[3]);//append string, without mod
+			printk(KERN_INFO "Substrings appended successfully.\n");
+		}
+		else{
+			printk(KERN_ERR "Not enough space for your input.\n");
+			return -EFAULT;
+		}
 	}
 	else if (!strncmp(str_in, mods[4], mods_len[4])){
 		//string to int, with error handling
