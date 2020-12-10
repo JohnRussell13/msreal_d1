@@ -64,24 +64,25 @@ ssize_t stred_read(struct file *pfile, char __user *buffer, size_t length, loff_
 {
 	int ret;
 	char buff[BUFF_SIZE];
-	long int len;
+	long int len;	
 	if (endRead) {
 		endRead = 0;
-		pos = 0;
+		//pos = strlen(storage);//redundant
 		printk(KERN_INFO "Successfuly read from storage, size: %d\n", strlen(storage));
 		return 0;
 	}
 
-	if (down_interruptible(&sem))
-		return -ERESTARTSYS;
-	while (pos == 0){
-		up(&sem);
-		if (wait_event_interruptible(readQ, (strlen(storage) > 0)))
-			return -ERESTARTSYS;
+	if (pos == 0){
 		if (down_interruptible(&sem))
 			return -ERESTARTSYS;
+		while (strlen(storage) == 0){
+			up(&sem);
+			if (wait_event_interruptible(readQ, (strlen(storage) > 0)))
+				return -ERESTARTSYS;
+			if (down_interruptible(&sem))
+				return -ERESTARTSYS;
+		}
 	}
-
 	len = scnprintf(buff, BUFF_SIZE , "%c", storage[pos++]);
 	ret = copy_to_user(buffer, buff, len);
 	if (ret)
@@ -112,7 +113,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 	
 	if (down_interruptible(&sem))
 		return -ERESTARTSYS;
-	while (pos != 0 && pos == strlen(storage)){
+	while (strlen(storage) == STORAGE_SIZE){
 		up(&sem);
 		if (wait_event_interruptible(writeQ, (strlen(storage) < STORAGE_SIZE)))
 			return -ERESTARTSYS;
@@ -227,7 +228,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		up(&sem);
 		return -EFAULT;
 	}
-	pos = strlen(storage);
+	pos = 0;
 	up(&sem);
 	wake_up_interruptible(&readQ);
 	return length;
