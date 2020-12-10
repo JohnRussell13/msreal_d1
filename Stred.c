@@ -79,19 +79,85 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 	char buff[BUFF_SIZE];
 	char str_in[STORAGE_SIZE];
 	int ret;
-
+	int trunc = 0;
+	char * needle_p;
+	char str_help[STORAGE_SIZE];
+	int i;
 	ret = copy_from_user(buff, buffer, length);
 	if (ret)
 		return -EFAULT;
 	buff[length-1] = '\0';
 
-	ret = sscanf(buff,"%s", str_in);
+	//error handling for too large input
+	if (length + strlen(storage) <= 100){
+		ret = sscanf(buff,"%s", str_in);
+	}
+	else{
+		printk(KERN_ERR "Not enough space for your input.\n");
+		return length;//-1?
+	}
+
 
 	//there are only few possibilities, so this won't be hard
-	
-	if (!strncmp(str_in,mods[0],mods_len[0])){
-		strcpy(storage,str_in+mods_len[0]);//copy string into storage, without mod
-		printk(KERN_INFO "String stored correctly.");
+	if (!strncmp(str_in, mods[0], mods_len[0])){
+		strcpy(storage, str_in + mods_len[0]);//copy string into storage, without mod
+		printk(KERN_INFO "String stored correctly.\n");
+	}
+	else if (!strncmp(str_in, mods[1], mods_len[1])){
+		//init storage
+		for (i = 0; i < STORAGE_SIZE; i++)
+			storage[i] = 0;
+		printk(KERN_INFO "String removed successfully.\n");
+	}
+	else if (!strncmp(str_in, mods[2], mods_len[2])){
+		//stop on first not-space
+		for (i = 0; i < STORAGE_SIZE; i++){
+			if (storage[i] != ' ')
+				break;
+		}
+		//remove spaces
+		strcpy(storage, storage+i);
+		//remove spaces
+		for (i = strlen(storage) - 1; i >= 0; i--){
+			if (storage[i] == ' '){
+				storage[i] = 0;
+			}
+			else{
+				break;
+			}
+		}
+		printk(KERN_INFO "Spaces eliminated successfully.\n");
+	}
+	else if (!strncmp(str_in, mods[3], mods_len[3])){
+		strcat(storage, str_in + mods_len[3]);//append string, without mod
+		printk(KERN_INFO "Substrings appended successfully.\n");
+	}
+	else if (!strncmp(str_in, mods[4], mods_len[4])){
+		//string to int, with error handling
+		if (!kstrtoint(str_in + mods_len[4], 10, &trunc)){
+			printk(KERN_ERR "Truncate length not valid.\n");
+		}
+		storage[strlen(storage) - trunc] = 0;//maybe for?
+		printk(KERN_INFO "String truncated successfully.\n");
+	}
+	else if (!strncmp(str_in, mods[5], mods_len[5])){
+		strcpy(str_in, str_in + mods_len[5]);
+		ret = strlen(str_in);
+		while(1) {
+			needle_p = strstr(storage, str_in);
+			if (needle_p){
+				strncpy(str_help, storage, ret);
+				strcat(str_help, needle_p + ret);
+				strcpy(storage, str_help);
+			}
+			else {
+				break;
+			}
+		}
+		printk(KERN_INFO "Substrings removed successfully.\n");
+	}
+	else{
+		printk(KERN_ERR "Invalid input.\n");
 	}
 	return length;
 }
