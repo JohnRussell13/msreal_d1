@@ -115,15 +115,15 @@ void remove_str(){
 }
 
 void truncate_str(){
-	int trunc;
+	char trunc[10];
 	printf("Insert number of truncated characters:\n");
-	scanf("%d", &trunc);
+	scanf("%s", trunc);
 	fp = fopen(path, "w");
 	if (fp == NULL){
 		printf("Error: Invalid path. File not opened.\n");
 		return;
 	}
-	fprintf(fp, "truncate=%d\n", trunc);
+	fprintf(fp, "truncate=%s\n", trunc);
 	
 	if (fclose(fp)){
 		printf("Error: File can't be closed.\n");
