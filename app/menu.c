@@ -51,7 +51,6 @@ void write_str(){
 }
 
 void concat_str(){
-
 	printf("Insert string to be concated:\n");
 	scanf("%s", str);
 	fp = fopen(path, "w");
@@ -120,8 +119,7 @@ void truncate_str(){
 		printf("Error: Invalid path. File not opened.\n");
 		return;
 	}
-	printf("TRUNC: %d", trunc);
-	fprintf(fp, "truncate=%d", trunc);
+	fprintf(fp, "truncate=%d\n", trunc);
 	
 	if (fclose(fp)){
 		printf("Error: File can't be closed.\n");
