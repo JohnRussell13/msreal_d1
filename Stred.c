@@ -27,10 +27,11 @@ struct semaphore sem;
 struct fasync_struct *async_queue;
 
 char storage[STORAGE_SIZE];
-int pos = 0;
-int endRead = 0;
 char mods[6][9];
 unsigned char mods_len[6];
+unsigned char endRead = 0;
+int pos = 0;
+
 
 int stred_open(struct inode *pinode, struct file *pfile);
 int stred_close(struct inode *pinode, struct file *pfile);
@@ -64,16 +65,16 @@ ssize_t stred_read(struct file *pfile, char __user *buffer, size_t length, loff_
 	int ret;
 	char buff[BUFF_SIZE];
 	long int len;
-	if (endRead){
+	if (endRead) {
 		endRead = 0;
 		pos = 0;
-		printk(KERN_INFO "Succesfully read from storage, size: %d\n", strlen(storage));
+		printk(KERN_INFO "Successfuly read from storage, size: %d\n", strlen(storage));
 		return 0;
 	}
 
 	if (down_interruptible(&sem))
 		return -ERESTARTSYS;
-	while (strlen(storage) == 0){
+	while (pos == 0){
 		up(&sem);
 		if (wait_event_interruptible(readQ, (strlen(storage) > 0)))
 			return -ERESTARTSYS;
@@ -81,17 +82,15 @@ ssize_t stred_read(struct file *pfile, char __user *buffer, size_t length, loff_
 			return -ERESTARTSYS;
 	}
 
-	len = scnprintf(buff,BUFF_SIZE , "%c", storage[pos]);
+	len = scnprintf(buff, BUFF_SIZE , "%c", storage[pos++]);
 	ret = copy_to_user(buffer, buff, len);
 	if (ret)
 		return -EFAULT;
-	pos ++;
-	if (pos == STORAGE_SIZE) {
-		wake_up_interruptible(&writeQ);
+	if (pos == strlen(storage)){
 		endRead = 1;
+		up(&sem);
+		wake_up_interruptible(&writeQ);
 	}
-	up(&sem);
-	wake_up_interruptible(&writeQ);
 	return len;
 }
 
@@ -113,7 +112,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 	
 	if (down_interruptible(&sem))
 		return -ERESTARTSYS;
-	while (strlen(storage) == STORAGE_SIZE){
+	while (pos != 0 && pos == strlen(storage)){
 		up(&sem);
 		if (wait_event_interruptible(writeQ, (strlen(storage) < STORAGE_SIZE)))
 			return -ERESTARTSYS;
@@ -137,6 +136,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		}
 		else{
 			printk(KERN_ERR "Not enough space for your input.\n");
+			up(&sem);
 			return -EFAULT;
 		}
 	}
@@ -172,6 +172,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		}
 		else{
 			printk(KERN_ERR "Not enough space for your input.\n");
+			up(&sem);
 			return -EFAULT;
 		}
 	}
@@ -180,10 +181,12 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		ret = !kstrtoint(str_in + mods_len[4], 10, &trunc);
 		if (ret == 0){
 			printk(KERN_ERR "Truncate length not valid.\n");
+			up(&sem);
 			return -EFAULT;
 		}
 		if (trunc > strlen(storage)){
 			printk(KERN_ERR "Truncate length too large.\n");
+			up(&sem);
 			return -EFAULT;
 		}
 		printk(KERN_INFO "Truncate length: %d\n", trunc);
@@ -221,8 +224,10 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 	}
 	else{
 		printk(KERN_ERR "Invalid input.\n");
+		up(&sem);
 		return -EFAULT;
 	}
+	pos = strlen(storage);
 	up(&sem);
 	wake_up_interruptible(&readQ);
 	return length;
