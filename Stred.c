@@ -165,6 +165,9 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		while(1) {
 			needle_p = strstr(storage, str_in);
 			if (needle_p){
+				for(i = strlen(str_help) - 1; i >= 0; i--){
+					str_help[i] = 0;
+				}
 				strncpy(str_help, storage, needle_p - storage);
 				strcat(str_help, needle_p + ret);
 				strcpy(storage, str_help);
