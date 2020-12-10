@@ -34,31 +34,101 @@ void read_str(){
 }
 
 void write_str(){
-
+	printf("Insert string to be written:\n");
+	scanf("%s", str);
+	fp = fopen(path, "w");
+	if (fp == NULL){
+		printf("Error: Invalid path. File not opened.\n");
+		return;
+	}
+	fprintf(fp, "string=%s", str);
+	
+	if (fclose(fp)){
+		printf("Error: File can't be closed.\n");
+		return;
+	}
 }
 
 void concat_str(){
 
+	printf("Insert string to be concated:\n");
+	scanf("%s", str);
+	fp = fopen(path, "w");
+	if (fp == NULL){
+		printf("Error: Invalid path. File not opened.\n");
+		return;
+	}
+	fprintf(fp, "append=%s", str);
+	
+	if (fclose(fp)){
+		printf("Error: File can't be closed.\n");
+		return;
+	}
 }
 
 void delete_str(){
-
+	fp = fopen(path, "w");
+	if (fp == NULL){
+		printf("Error: Invalid path. File not opened.\n");
+		return;
+	}
+	fprintf(fp, "clear");
+	
+	if (fclose(fp)){
+		printf("Error: File can't be closed.\n");
+		return;
+	}
 }
 
 void clear_str(){
-
+	fp = fopen(path, "w");
+	if (fp == NULL){
+		printf("Error: Invalid path. File not opened.\n");
+		return;
+	}
+	fprintf(fp, "shrink");
+	
+	if (fclose(fp)){
+		printf("Error: File can't be closed.\n");
+		return;
+	}
 }
 
 void remove_str(){
-
+	printf("Insert substring to be removed:\n");
+	scanf("%s", str);
+	fp = fopen(path, "w");
+	if (fp == NULL){
+		printf("Error: Invalid path. File not opened.\n");
+		return;
+	}
+	fprintf(fp, "remove=%s", str);
+	
+	if (fclose(fp)){
+		printf("Error: File can't be closed.\n");
+		return;
+	}
 }
 
 void truncate_str(){
-
+	int trunc;
+	printf("Insert number of truncated characters:\n");
+	scanf("%s", str);
+	fp = fopen(path, "w");
+	if (fp == NULL){
+		printf("Error: Invalid path. File not opened.\n");
+		return;
+	}
+	fprintf(fp, "truncate=%d", trunc);
+	
+	if (fclose(fp)){
+		printf("Error: File can't be closed.\n");
+		return;
+	}
 }
 
 void error_hand(){
-
+	printf("Mode not valid.\n");
 }
 
 int main(){
