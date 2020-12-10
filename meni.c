@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #define path "/dev/stred"
 
 void menu_print(){
@@ -61,12 +62,10 @@ void error_hand(){
 }
 
 int main(){
-	FILE *fp;
-	char *str;
 	unsigned char mode;
 	while(1){
 		menu_print();
-		scanf("%hhu", mode);
+		scanf("%hhu", &mode);
 		switch(mode) {
 			case 1:
 				read_str();
@@ -87,7 +86,7 @@ int main(){
 				remove_str();
 				break;
 			case 7:
-				trucante_str();
+				truncate_str();
 				break;
 			default:
 				error_hand();
