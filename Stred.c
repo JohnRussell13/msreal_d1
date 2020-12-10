@@ -9,7 +9,7 @@
 #include <linux/kdev_t.h>
 #include <linux/uaccess.h>
 #include <linux/errno.h>
-#define BUFF_SIZE 20
+#define BUFF_SIZE 120
 #define STORAGE_SIZE 100
 
 MODULE_LICENSE("Dual BSD/GPL");
@@ -60,10 +60,10 @@ ssize_t stred_read(struct file *pfile, char __user *buffer, size_t length, loff_
 	if (endRead){
 		endRead = 0;
 		pos = 0;
-		printk(KERN_INFO "Succesfully read from file\n");
+		printk(KERN_INFO "Succesfully read from storage, size: %d\n", strlen(storage));
 		return 0;
 	}
-	len = scnprintf(buff,BUFF_SIZE , "%c ", storage[pos]);
+	len = scnprintf(buff,BUFF_SIZE , "%c", storage[pos]);
 	ret = copy_to_user(buffer, buff, len);
 	if (ret)
 		return -EFAULT;
@@ -83,24 +83,30 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 	char * needle_p;
 	char str_help[STORAGE_SIZE];
 	int i;
+
 	ret = copy_from_user(buff, buffer, length);
 	if (ret)
 		return -EFAULT;
 	buff[length-1] = '\0';
 
 	//error handling for too large input
-	if (length + strlen(storage) <= 100){
-		ret = sscanf(buff,"%s", str_in);
+	if (length + strlen(storage) <= STORAGE_SIZE){
+		//sscanf(buff,"%s", str_in);
+		strcpy(str_in, buff);
 	}
 	else{
 		printk(KERN_ERR "Not enough space for your input.\n");
-		return length;//-1?
+		return -EFAULT;
 	}
 
 
 	//there are only few possibilities, so this won't be hard
 	if (!strncmp(str_in, mods[0], mods_len[0])){
 		strcpy(storage, str_in + mods_len[0]);//copy string into storage, without mod
+		//not required if clear used, but just in case..
+		for (i = strlen(storage); i < STORAGE_SIZE; i++){
+			storage[i] = 0;
+		}
 		printk(KERN_INFO "String stored correctly.\n");
 	}
 	else if (!strncmp(str_in, mods[1], mods_len[1])){
@@ -134,19 +140,32 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 	}
 	else if (!strncmp(str_in, mods[4], mods_len[4])){
 		//string to int, with error handling
-		if (!kstrtoint(str_in + mods_len[4], 10, &trunc)){
+		ret = !kstrtoint(str_in + mods_len[4], 10, &trunc);
+		if (ret == 0){
 			printk(KERN_ERR "Truncate length not valid.\n");
+			return -EFAULT;
 		}
-		storage[strlen(storage) - trunc] = 0;//maybe for?
+		if (trunc > strlen(storage)){
+			printk(KERN_ERR "Truncate length too large.\n");
+			return -EFAULT;
+		}
+		printk(KERN_INFO "Truncate length: %d\n", trunc);
+		for (i = 1; i <= trunc; i++){
+			storage[strlen(storage) - 1] = 0;
+		}
 		printk(KERN_INFO "String truncated successfully.\n");
 	}
 	else if (!strncmp(str_in, mods[5], mods_len[5])){
+		ret = strlen(str_in);
 		strcpy(str_in, str_in + mods_len[5]);
+		for (i = strlen(str_in); i < ret; i++){
+			str_in[i] = 0;
+		}
 		ret = strlen(str_in);
 		while(1) {
 			needle_p = strstr(storage, str_in);
 			if (needle_p){
-				strncpy(str_help, storage, ret);
+				strncpy(str_help, storage, needle_p - storage);
 				strcat(str_help, needle_p + ret);
 				strcpy(storage, str_help);
 			}
@@ -158,6 +177,7 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 	}
 	else{
 		printk(KERN_ERR "Invalid input.\n");
+		return -EFAULT;
 	}
 	return length;
 }
