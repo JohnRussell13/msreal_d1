@@ -67,7 +67,7 @@ ssize_t stred_read(struct file *pfile, char __user *buffer, size_t length, loff_
 	long int len;	
 	if (endRead) {
 		endRead = 0;
-		//pos = strlen(storage);//redundant
+		pos = 0;
 		printk(KERN_INFO "Successfuly read from storage, size: %d\n", strlen(storage));
 		return 0;
 	}
@@ -127,19 +127,19 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 
 	//there are only few possibilities, so this won't be hard
 	if (!strncmp(str_in, mods[0], mods_len[0])){
-		if (strlen(storage) + strlen(str_in) - mods_len[0] < STORAGE_SIZE ){
-			strcpy(storage, str_in + mods_len[0]);//copy string into storage, without mod
-			//not required if clear used, but just in case..
-			for (i = strlen(storage); i < STORAGE_SIZE; i++){
-				storage[i] = 0;
-			}
-			printk(KERN_INFO "String stored correctly.\n");
-		}
-		else{
-			printk(KERN_ERR "Not enough space for your input.\n");
+		while (strlen(storage) + strlen(str_in) - mods_len[0] >= STORAGE_SIZE){
 			up(&sem);
-			return -EFAULT;
+			if (wait_event_interruptible(writeQ, (strlen(storage) + strlen(str_in) - mods_len[0] >= STORAGE_SIZE)))
+				return -ERESTARTSYS;
+			if (down_interruptible(&sem))
+				return -ERESTARTSYS;
 		}
+		strcpy(storage, str_in + mods_len[0]);//copy string into storage, without mod
+		//not required if clear used, but just in case..
+		for (i = strlen(storage); i < STORAGE_SIZE; i++){
+			storage[i] = 0;
+		}
+		printk(KERN_INFO "String stored correctly.\n");
 	}
 	else if (!strncmp(str_in, mods[1], mods_len[1])){
 		//init storage
@@ -167,15 +167,15 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		printk(KERN_INFO "Spaces eliminated successfully.\n");
 	}
 	else if (!strncmp(str_in, mods[3], mods_len[3])){
-		if (strlen(storage) + strlen(str_in) - mods_len[3] < STORAGE_SIZE){
-			strcat(storage, str_in + mods_len[3]);//append string, without mod
-			printk(KERN_INFO "Substrings appended successfully.\n");
-		}
-		else{
-			printk(KERN_ERR "Not enough space for your input.\n");
+		while (strlen(storage) + strlen(str_in) - mods_len[3] >= STORAGE_SIZE){
 			up(&sem);
-			return -EFAULT;
+			if (wait_event_interruptible(writeQ, (strlen(storage) + strlen(str_in) - mods_len[3] >= STORAGE_SIZE)))
+				return -ERESTARTSYS;
+			if (down_interruptible(&sem))
+				return -ERESTARTSYS;
 		}
+		strcat(storage, str_in + mods_len[3]);//append string, without mod
+		printk(KERN_INFO "Substrings appended successfully.\n");
 	}
 	else if (!strncmp(str_in, mods[4], mods_len[4])){
 		//string to int, with error handling
@@ -228,7 +228,6 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 		up(&sem);
 		return -EFAULT;
 	}
-	pos = 0;
 	up(&sem);
 	wake_up_interruptible(&readQ);
 	return length;
