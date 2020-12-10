@@ -11,7 +11,7 @@
 #include <linux/errno.h>
 #include <linux/wait.h>
 #include <linux/semaphore.h>
-#define BUFF_SIZE 120
+#define BUFF_SIZE 200 
 #define STORAGE_SIZE 100 + 1
 
 MODULE_LICENSE("Dual BSD/GPL");
@@ -98,7 +98,7 @@ ssize_t stred_read(struct file *pfile, char __user *buffer, size_t length, loff_
 ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length, loff_t *offset) 
 {
 	char buff[BUFF_SIZE];
-	char str_in[STORAGE_SIZE];
+	char str_in[STORAGE_SIZE+7];//max is +7 = "append="
 	int ret;
 	int trunc = 0;
 	char * needle_p;
@@ -109,6 +109,10 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 	ret = copy_from_user(buff, buffer, length);
 	if (ret)
 		return -EFAULT;
+	if(length > STORAGE_SIZE + 7){
+		printk(KERN_ERR "Input string too large.\n");
+		return -EFAULT;
+	}
 	buff[length-1] = '\0';
 	
 	if (down_interruptible(&sem))
@@ -127,12 +131,9 @@ ssize_t stred_write(struct file *pfile, const char __user *buffer, size_t length
 
 	//there are only few possibilities, so this won't be hard
 	if (!strncmp(str_in, mods[0], mods_len[0])){
-		while (strlen(storage) + strlen(str_in) - mods_len[0] >= STORAGE_SIZE){
-			up(&sem);
-			if (wait_event_interruptible(writeQ, (strlen(storage) + strlen(str_in) - mods_len[0] >= STORAGE_SIZE)))
-				return -ERESTARTSYS;
-			if (down_interruptible(&sem))
-				return -ERESTARTSYS;
+		if (strlen(buff) - mods_len[0] > STORAGE_SIZE){
+			printk(KERN_ERR "Input string too large.\n");
+			return -EFAULT;
 		}
 		strcpy(storage, str_in + mods_len[0]);//copy string into storage, without mod
 		//not required if clear used, but just in case..
