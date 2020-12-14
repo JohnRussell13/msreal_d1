@@ -17,19 +17,23 @@ void menu_print(){
 }
 
 FILE *fp;
-char str[STORAGE_SIZE];
+int nbytes = 100;
+int bytes_read;
+char *str = 0; 
+char str_w[STORAGE_SIZE];
 
 void read_str(){
 	fp = fopen(path, "r");
+	
 	if (fp == NULL){
 		printf("Error: Invalid path. File not opened.\n");
 		return;
 	}
 
-	fscanf(fp, "%[^\n]", str);
+	fscanf(fp, "%[^\n]", str_w);
 
 	printf("Stored string:\n");
-	printf("%s\n", str);	
+	printf("%s\n", str_w);	
 	if (fclose(fp)){
 		printf("Error: File can't be closed.\n");
 		return;
@@ -38,8 +42,9 @@ void read_str(){
 
 void write_str(){
 	printf("Insert string to be written:\n");
-	scanf("\n");
-	scanf("\"%[^\"]\"", str);
+	str = (char *)malloc(nbytes + 1);
+	bytes_read = getline(&str, &nbytes, stdin);
+	str[bytes_read - 1] = 0;
 	fp = fopen(path, "w");
 	if (fp == NULL){
 		printf("Error: Invalid path. File not opened.\n");
@@ -50,12 +55,14 @@ void write_str(){
 		printf("Error: File can't be closed.\n");
 		return;
 	}
+	free(str);
 }
 
 void concat_str(){
 	printf("Insert string to be concated:\n");
-	scanf("\n");
-	scanf("\"%[^\"]\"", str);
+	str = (char *)malloc(nbytes + 1);
+	bytes_read = getline(&str, &nbytes, stdin);
+	str[bytes_read - 1] = 0;
 	fp = fopen(path, "w");
 	if (fp == NULL){
 		printf("Error: Invalid path. File not opened.\n");
@@ -67,6 +74,7 @@ void concat_str(){
 		printf("Error: File can't be closed.\n");
 		return;
 	}
+	free(str);
 }
 
 void delete_str(){
@@ -99,8 +107,10 @@ void clear_str(){
 
 void remove_str(){
 	printf("Insert substring to be removed:\n");
-	scanf("\n");
-	scanf("\"%[^\"]\"", str);
+	str = (char *)malloc(nbytes + 1);
+	bytes_read = getline(&str, &nbytes, stdin);
+	str[bytes_read - 1] = 0;
+	
 	fp = fopen(path, "w");
 	if (fp == NULL){
 		printf("Error: Invalid path. File not opened.\n");
@@ -112,6 +122,7 @@ void remove_str(){
 		printf("Error: File can't be closed.\n");
 		return;
 	}
+	free(str);
 }
 
 void truncate_str(){
@@ -136,12 +147,14 @@ void error_hand(){
 }
 
 int main(){
-	char *input;
 	int mode;
 	while(1){
 		menu_print();
-		scanf("%s", input);
-		mode = atoi(input);
+		str = (char *)malloc(nbytes + 1);
+		bytes_read = getline(&str, &nbytes, stdin);
+		str[bytes_read - 1] = 0;
+		
+		mode = atoi(str);
 		if (!(mode > 0 && mode <= 7)){
 			error_hand();
 		}
@@ -173,5 +186,6 @@ int main(){
 					break;
 			}
 		}
+		free(str);
 	}
 }
