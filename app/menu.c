@@ -13,7 +13,6 @@ void menu_print(){
 	printf("5: Clear spaces\n");
 	printf("6: Remove substring\n");
 	printf("7: Remove last n characters\n");
-	printf("Note: When inputing strings, use \"quotes\"!\n");
 }
 
 FILE *fp;
